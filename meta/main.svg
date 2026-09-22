@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 240" width="720" height="240">
+  <defs>
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#12161c"/>
+      <stop offset="1" stop-color="#0e1116"/>
+    </linearGradient>
+    <style>
+  text{font-family:'Segoe UI',system-ui,-apple-system,sans-serif}
+  .mono{font-family:'JetBrains Mono','Cascadia Mono',ui-monospace,Menlo,monospace;font-size:11px;fill:#8e97a4}
+  .ttl{font-size:52px;font-weight:800}
+  .mode{font-family:'JetBrains Mono',ui-monospace,Menlo,monospace;font-size:9.5px;letter-spacing:2px;fill:#f0a640;text-anchor:middle;opacity:.85}
+  .chipt{font-size:12.5px;font-weight:600;fill:#86c17a;text-anchor:middle}
+
+  /* the two halves of the name slide together */
+  .tl{animation:inL .75s cubic-bezier(.22,1.2,.36,1) .15s both}
+  .tr{animation:inR .75s cubic-bezier(.22,1.2,.36,1) .15s both}
+  @keyframes inL{from{opacity:0;transform:translateX(-70px)}to{opacity:1;transform:none}}
+  @keyframes inR{from{opacity:0;transform:translateX(70px)}to{opacity:1;transform:none}}
+  .dash{animation:snap .5s cubic-bezier(.34,1.8,.64,1) .8s both;transform-origin:360px 58px}
+  @keyframes snap{0%{opacity:0;transform:scale(0)}100%{opacity:1;transform:scale(1)}}
+
+  /* panels rise in */
+  .pl{animation:rise .6s ease-out .75s both} .pr{animation:rise .6s ease-out .9s both} .trk{animation:fade .5s ease 1.2s both}
+  @keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+
+  /* files travel left → right */
+  .pk{opacity:0}
+  .p0{animation:fly 0.9s cubic-bezier(.45,0,.3,1) 1.55s both}.p1{animation:fly 0.9s cubic-bezier(.45,0,.3,1) 1.95s both}.p2{animation:fly 0.9s cubic-bezier(.45,0,.3,1) 3.05s both}
+  @keyframes fly{0%{opacity:0;transform:translateX(0)}12%{opacity:1}85%{opacity:1}100%{opacity:0;transform:translateX(129px)}}
+
+  /* arriving rows grow in with a green flash */
+  .a0{animation:fade .2s ease 2.38s both} .a0 .grow{animation:grow .45s cubic-bezier(.3,1.3,.5,1) 2.38s both;transform-origin:474px 0} .a0 .flash{animation:flash 1s ease 2.38s both}.a1{animation:fade .2s ease 2.78s both} .a1 .grow{animation:grow .45s cubic-bezier(.3,1.3,.5,1) 2.78s both;transform-origin:474px 0} .a1 .flash{animation:flash 1s ease 2.78s both}.a2{animation:fade .2s ease 3.88s both} .a2 .grow{animation:grow .45s cubic-bezier(.3,1.3,.5,1) 3.88s both;transform-origin:474px 0} .a2 .flash{animation:flash 1s ease 3.88s both}
+  @keyframes grow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+  @keyframes flash{0%{opacity:.9}100%{opacity:0}}
+
+  /* mirror: the stale archive file is struck through, then removed (after the copies) */
+  .strike{animation:grow .35s ease-out 2.75s both;transform-origin:470px 0}
+  .stale{animation:gone .45s ease-in 3.15s both}
+  @keyframes gone{from{opacity:1}to{opacity:0;transform:translateX(10px)}}
+
+  /* finished: archive goes green, chip pops */
+  .okdot{animation:fade .4s ease 4.13s both}
+  .chip{animation:snap2 .55s cubic-bezier(.34,1.56,.64,1) 4.23s both;transform-origin:360.0px 198px}
+  @keyframes snap2{0%{opacity:0;transform:scale(.5)}100%{opacity:1;transform:scale(1)}}
+</style>
+  </defs>
+  <rect width="720" height="240" rx="18" fill="url(#bgGrad)"/>
+
+  <!-- Name: "Proto" and "Sync" converge -->
+  <text class="ttl tl" x="346" y="76" text-anchor="end" fill="#e8e2d4">Proto</text>
+  <rect class="dash" x="351" y="54" width="18" height="7" rx="3.5" fill="#f0a640"/>
+  <text class="ttl tr" x="374" y="76" text-anchor="start" fill="#f0a640">Sync</text>
+
+  <!-- Source and archive drives -->
+  <g class="pl"><rect x="62" y="104" width="210" height="104" rx="12" fill="#171c23" stroke="#2a313c" stroke-width="1.5"/><rect x="76" y="117" width="17" height="11" rx="3" fill="none" stroke="#8e97a4" stroke-width="1.5"/><circle cx="88.5" cy="122.5" r="1.3" fill="#8e97a4"/><text x="100" y="126.5" class="mono">Drive 1</text><line x1="74" y1="136" x2="260" y2="136" stroke="#2a313c" stroke-width="1"/><circle cx="254" cy="122.5" r="4" fill="#86c17a"/><g class="" ><circle cx="78" cy="143.5" r="2.6" fill="#5c6573"/><rect x="88" y="140" width="150" height="7" rx="3.5" fill="#252c36"/></g><g class="" ><circle cx="78" cy="157.5" r="2.6" fill="#5c6573"/><rect x="88" y="154" width="118" height="7" rx="3.5" fill="#252c36"/></g><g class="" ><circle cx="78" cy="171.5" r="2.6" fill="#86c17a"/><rect x="88" y="168" width="136" height="7" rx="3.5" fill="#252c36"/></g><g class="" ><circle cx="78" cy="185.5" r="2.6" fill="#86c17a"/><rect x="88" y="182" width="104" height="7" rx="3.5" fill="#252c36"/></g><g class="" ><circle cx="78" cy="199.5" r="2.6" fill="#86c17a"/><rect x="88" y="196" width="142" height="7" rx="3.5" fill="#252c36"/></g></g>
+  <g class="pr"><rect x="448" y="104" width="210" height="104" rx="12" fill="#171c23" stroke="#2a313c" stroke-width="1.5"/><rect x="462" y="117" width="17" height="11" rx="3" fill="none" stroke="#8e97a4" stroke-width="1.5"/><circle cx="474.5" cy="122.5" r="1.3" fill="#8e97a4"/><text x="486" y="126.5" class="mono">Drive 2</text><line x1="460" y1="136" x2="646" y2="136" stroke="#2a313c" stroke-width="1"/><circle cx="640" cy="122.5" r="4" fill="#f0a640"/><circle class="okdot" cx="640" cy="122.5" r="4" fill="#86c17a"/><g class="" ><circle cx="464" cy="143.5" r="2.6" fill="#5c6573"/><rect x="474" y="140" width="150" height="7" rx="3.5" fill="#252c36"/></g><g class="" ><circle cx="464" cy="157.5" r="2.6" fill="#5c6573"/><rect x="474" y="154" width="118" height="7" rx="3.5" fill="#252c36"/></g><g class="stale"><circle cx="464" cy="171.5" r="2.6" fill="#e0705f"/><rect x="474" y="168" width="120" height="7" rx="3.5" fill="#e0705f" fill-opacity="0.35"/><line class="strike" x1="470" y1="171.5" x2="598" y2="171.5" stroke="#e0705f" stroke-width="1.6" stroke-linecap="round"/></g><g class="a0"><circle cx="464" cy="185.5" r="2.6" fill="#86c17a"/><rect class="grow" x="474" y="182" width="104" height="7" rx="3.5" fill="#252c36"/><rect class="flash" x="474" y="182" width="104" height="7" rx="3.5" fill="#86c17a"/></g><g class="a1"><circle cx="464" cy="199.5" r="2.6" fill="#86c17a"/><rect class="grow" x="474" y="196" width="142" height="7" rx="3.5" fill="#252c36"/><rect class="flash" x="474" y="196" width="142" height="7" rx="3.5" fill="#86c17a"/></g><g class="a2"><circle cx="464" cy="171.5" r="2.6" fill="#86c17a"/><rect class="grow" x="474" y="168" width="136" height="7" rx="3.5" fill="#252c36"/><rect class="flash" x="474" y="168" width="136" height="7" rx="3.5" fill="#86c17a"/></g></g>
+
+  <!-- Transfer track, files in flight, result -->
+  <g class="trk"><line x1="282" y1="162" x2="432" y2="162" stroke="#2a313c" stroke-width="2" stroke-dasharray="3 5" stroke-linecap="round"/><path d="M428 157 L435 162 L428 167" fill="none" stroke="#f0a640" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><text x="360.0" y="146" class="mode">MIRROR</text></g>
+  <g class="pk p0"><path d="M284 155.0 h7 l4 4 v10 h-11 z" fill="#86c17a" fill-opacity="0.18" stroke="#86c17a" stroke-width="1.4" stroke-linejoin="round"/><path d="M291 155.0 v4 h4" fill="none" stroke="#86c17a" stroke-width="1.2" stroke-linejoin="round"/></g><g class="pk p1"><path d="M284 155.0 h7 l4 4 v10 h-11 z" fill="#86c17a" fill-opacity="0.18" stroke="#86c17a" stroke-width="1.4" stroke-linejoin="round"/><path d="M291 155.0 v4 h4" fill="none" stroke="#86c17a" stroke-width="1.2" stroke-linejoin="round"/></g><g class="pk p2"><path d="M284 155.0 h7 l4 4 v10 h-11 z" fill="#86c17a" fill-opacity="0.18" stroke="#86c17a" stroke-width="1.4" stroke-linejoin="round"/><path d="M291 155.0 v4 h4" fill="none" stroke="#86c17a" stroke-width="1.2" stroke-linejoin="round"/></g>
+  <g class="chip"><rect x="312.0" y="186" width="96" height="24" rx="12" fill="#86c17a" fill-opacity="0.13" stroke="#86c17a" stroke-width="1.3"/><path d="M327.0 198 l3.5 3.5 l6.5 -7" fill="none" stroke="#86c17a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><text x="369.0" y="202.5" class="chipt">in sync</text></g>
+</svg>

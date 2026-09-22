@@ -1,181 +1,275 @@
-# Proto-Sync
+<div align="center">
 
-A self-hosted, FreeFileSync-style compare & sync web app, grown out of `media-backup.sh`.
-Compare two folders, review every copy / move / delete in a side-by-side grid, change
-anything you disagree with, then synchronize — or let a schedule, a file-change watcher,
-a drive being plugged in, or a webhook do it for you. rsync does the transfers.
+![](meta/main.svg)
 
-```
- ┌ Compare ┐ ⚙          ▽              ⚙ [Mirror|Update|Two way|Custom] [ Synchronize ]
- │ /mnt/media            ● ready ext4 ▬▬  →  ⇄  /mnt/media-archive1   ● ready ntfs ▬▬ │
- │ Left only 10  Right only 4  Left newer 2 …    → 12  ← 0  🗑 3  ↪ 1    [ Filter by path ] │
- │ Left                     Size  Modified │ Action │ Right                  Size  Modified │
- │ TV/Pluribus/ S01E01.mkv  1.7 MB …       │  •  →  │                                      │
- │                                         │  •  🗑  │ Movies/Old Rip (2009)/ old.avi       │
- │ TV/Severance/ S02E06 - Attila.mkv …     │  •  ↪  │                                      │
-```
+*Compare two drives, see every change before it happens, then sync... by hand, on a schedule, or the moment a drive plugs in.*
+
+</div>
+
+---
+
+## Screenshots
+
+<div align="center">
+
+| | |
+|:-:|:-:|
+| ![](meta/preview1.png) | ![](meta/preview2.png) |
+| ![](meta/preview3.png) | ![](meta/preview4.png) |
+
+</div>
+
+---
+
+## What it does
+
+Proto-Sync is a self-hosted, FreeFileSync-style backup tool that lives in your browser.
+Point it at two folders, and it shows you side by side exactly what will be copied, updated,
+moved, and deleted. Nothing changes until you press **Synchronize**. It started life as a
+bash script (`media-backup.sh`) that mirrored a media server to an archive drive, and it
+keeps every one of that script's safety checks. rsync does the transfers. It runs as a
+single container and keeps its history in one SQLite file.
 
 ## Features
 
-| Area | What you get |
+| | |
 |---|---|
-| **Compare** | By time + size (with tolerance and DST hour-shift), by content, or by size. Categories: left/right only, left/right newer, different, conflict, identical. Folder pairs: as many per job as you like. |
-| **Review grid** | Virtualized — handles hundreds of thousands of rows. Category and action chips, path search, multi-select (click / Shift / Ctrl / Ctrl+A), per-row action override that cascades into folders, *Exclude via filter*, bulk actions on everything shown. |
-| **Sync variants** | Mirror →, Update →, Two way ⇄ (remembers the last sync to tell deletions from new files, with a conflict policy), Custom (pick the action per category). |
-| **Moves & renames** | Detected by size + time + a sampled content hash, then applied as a rename instead of copy + delete. Different content with the same name/size is *not* treated as a move. |
-| **Deletion handling** | Recycle (`.protosync-trash` on the same drive, auto-purged after N days), Versioning (separate folder; per-run folder, per-file time-stamp, or replace; min/max/age retention), or Permanent. |
-| **Safety** | Sentinel files, mountpoint check, empty-source guard, max-delete % and count (override only after review), free-space check, per-path locks, mid-run drive watch with hang detection, re-stat before every delete, post-copy verification, retries. |
-| **Automation** | Daily (pick days), every N minutes, cron, once, on startup, **real-time** (inotify or polling, debounced), **when the drive connects**, after another job (success / failure / any). Allowed-hours window, queue-if-running, jitter, dry-run-only triggers. |
-| **Integration** | Per-job webhook URL with a rotatable token, pre/post shell hooks with `PROTOSYNC_*` env vars, notifications via ntfy, Discord, Gotify, generic JSON webhook, email. Full REST API + live server-sent events. |
-| **History** | Every run with trigger, status, counts and a full log including the CREATED / UPDATED / MOVED / DELETED change trees from the original script. Retention is configurable. |
+| 🔍 **Compare** | Compare by time and size (with a tolerance for NTFS/exFAT timestamps), by file content, or by size alone. Every difference is sorted into left only, right only, left newer, right newer, different, or conflict. |
+| 🗂️ **Review grid** | A side-by-side grid that stays fast with hundreds of thousands of files. Filter by category or action, search by path, multi-select, and change what happens to any file or whole folder before you sync. |
+| 🔁 **Sync variants** | **Mirror** makes the right an exact copy of the left. **Update** only copies new and newer files. **Two way** remembers the last sync, so it can tell a deletion from a new file. **Custom** lets you pick the action for every category. |
+| ↪️ **Moves & renames** | A renamed or moved file is applied as a rename instead of copy + delete. Detection uses size, time, and a sampled content hash, so two different files that happen to match on name and size are never confused. |
+| ♻️ **Recycle & versioning** | Deleted and overwritten files go to a hidden recycle folder on the same drive, cleared after 14 days. Or keep a full time-stamped version history in a separate folder, or delete permanently. |
+| 🛡️ **Safety guards** | Refuses to run against an empty mountpoint, an empty source, or a sync that would delete too much. Checks free space, watches both drives mid-run, re-checks each file before deleting it, and verifies every copy. |
+| ⏰ **Scheduling** | Daily at a time, every N minutes, cron, once, on startup, or after another job finishes. Add as many triggers as you like, with an allowed-hours window. The editor previews the next five run times. |
+| ⚡ **Real-time** | Watch a folder and sync a few seconds after things stop changing. Polling mode covers network shares and FUSE mounts where file watching doesn't work. |
+| 🔌 **Drive connects** | Plug in the archive drive and it backs itself up. |
+| 📊 **Live progress** | Percent, speed, ETA, and the current file, with pause, resume, and stop. |
+| 📜 **History** | Every run is kept with its trigger, result, and a full log, including trees of everything created, updated, moved, and deleted. |
+| 🔔 **Notifications** | ntfy, Discord, Gotify, email, or a JSON webhook, on every run, only on changes, or only when something goes wrong. |
+| 🔗 **Webhooks & hooks** | Every job gets its own start URL for scripts, Home Assistant, or other machines. Run your own shell commands before and after a sync. |
+| 🔑 **API** | Everything in the UI is available over a REST API, plus a live event stream. |
 
-## Install
+---
 
-Whatever you choose, **bind-mount the drives at the same path inside as outside**
-(`/mnt` → `/mnt`) so paths in logs and jobs match what you see on the host.
+## Quick start
 
-### Podman compose (quickest)
-
-```fish
-git clone <this repo> proto-sync; and cd proto-sync
-cp .env.example .env          # edit PROTOSYNC_ROOTS, TZ, seed paths
+```bash
+git clone https://github.com/FrameEnder/Proto-Sync.git
+cd Proto-Sync
+cp .env.example .env        # set PROTOSYNC_ROOTS, TZ, and your two folders
 podman compose up -d --build
 ```
 
-Open `http://<host>:8475`.
+Go to **http://localhost:8475**. On first start, Proto-Sync creates a job for the two folders
+in `.env` (`/mnt/media` → `/mnt/media-archive1` by default). Its daily trigger starts turned off.
 
-### Podman Quadlet (systemd-native, recommended for a server)
+Docker works too: use `docker compose` instead, and see the `user:` note in `compose.yaml`.
 
-```fish
+---
+
+## Run as a service
+
+The recommended way on a server is a rootless Podman **Quadlet**. systemd starts it at boot
+and restarts it if it stops:
+
+```bash
 podman build --format docker -t localhost/proto-sync:latest .
 mkdir -p ~/.config/containers/systemd ~/.local/share/proto-sync
 cp deploy/proto-sync.container ~/.config/containers/systemd/
 systemctl --user daemon-reload
 systemctl --user start proto-sync
-loginctl enable-linger $USER   # keep running while logged out
-journalctl --user -u proto-sync -f
+loginctl enable-linger $USER   # keep it running while you're logged out
 ```
 
-### Bare metal
+Edit the paths and `TZ` in `proto-sync.container` first. Logs: `journalctl --user -u proto-sync -f`
 
-See the header of `deploy/proto-sync.service`. It needs Python 3.11+ and rsync.
+These are mounted into the container:
 
-### Why the mount options matter
+| Mount | What it's for |
+|---|---|
+| `/data` | the SQLite database, run logs, and locks |
+| `/mnt` → `/mnt` (`rslave`) | your drives, at the same path inside as outside |
 
-- **`rslave` propagation** on the `/mnt` bind. Without it, a USB or DAS drive mounted *after* the
-  container started is invisible inside it — you would see an empty mountpoint, the sentinel
-  check would (correctly) block the run, and the *when the drive connects* trigger would never fire.
-- **`SecurityLabelDisable` / `label=disable`** on SELinux hosts (Bazzite, Fedora). The usual `:z`
-  would relabel every file on your media drives.
-- **No `keep-id`.** Under rootless Podman the container's root already *is* your user, so copied
-  files stay yours. `keep-id` would map container root to a subordinate uid.
+A few of the mount options matter:
 
-## First run
+- **`rslave`** lets a drive that's mounted *after* the container started show up inside it.
+  Without it, the "drive connects" trigger never fires.
+- **`SecurityLabelDisable`** is for SELinux hosts (Fedora, Bazzite). The usual `:z` would relabel every file on your drives.
+- **No `keep-id`.** Under rootless Podman the container's root already *is* your user, so copied files stay yours.
 
-1. The first start creates **Entertainment Server → Archive**, the same pair and excludes as
-   `media-backup.sh`. Its 03:00 trigger starts **disabled**.
-2. Make sure both drives carry the sentinel — the same file the script used:
-   ```fish
+No containers? `deploy/proto-sync.service` runs it straight on the host with Python 3.11+ and rsync.
+
+---
+
+## First sync
+
+1. Make sure both drives have a sentinel file. This is how Proto-Sync tells a mounted drive from an empty folder:
+   ```bash
    touch /mnt/media/.mounted /mnt/media-archive1/.mounted
    ```
-   Or click the red *no .mounted* badge next to a path. Only do that when the drive really is mounted.
-3. Press **Compare** (F5), review, then **Synchronize** (F9). Tick *Dry run* first if you like.
-4. When you're happy, open the job's **Schedule** tab, enable the daily trigger and remove the old cron entry.
+   You can also click the red **no .mounted** badge next to a path, but only when the drive really is mounted.
+2. Press **Compare** (F5) and look over the preview.
+3. Press **Synchronize** (F9). Tick **Dry run** the first time to see the plan without changing anything.
+4. When you're happy, open **Edit job → Schedule** and turn on a trigger.
+
+---
 
 ## Coming from media-backup.sh
 
+Proto-Sync keeps everything the original script did:
+
 | media-backup.sh | Proto-Sync |
 |---|---|
-| `SRC` / `DST` | Left / right of the folder pair |
-| rsync `--delete-after` | Mirror variant, deletion timing *After copying* (default) |
-| `.mounted` sentinel checks | Safety → Sentinel file, required on both sides (default) |
-| Empty-source guard | Safety → Empty source guard (default on) |
-| `flock` lock file | Per-path locks: two jobs touching the same drive never overlap |
-| `--no-perms --no-owner --no-group` | Automatic on NTFS / exFAT / FAT / CIFS (Sync → Permissions: *Auto*) |
+| `SRC` / `DST` | left and right of a folder pair |
+| rsync `--delete-after` | **Mirror**, with deletion timing *After copying* |
+| `.mounted` sentinel checks | Safety → Sentinel file, required on both sides |
+| empty-source guard | Safety → Empty source guard |
+| `flock` lock file | per-drive locks, so two jobs never touch the same drive at once |
+| `--no-perms --no-owner --no-group` | applied automatically on NTFS, exFAT, FAT, and CIFS |
 | `--modify-window=2` | Compare → Time tolerance: 2 s |
-| `EXCLUDES=(…)` | Filter → Exclude (*Reset to media-backup defaults* restores them) |
-| `--dry-run` | *Dry run* checkbox, or a trigger set to *Dry run only* |
-| `--quiet` for cron | Scheduled triggers; notifications instead of terminal output |
-| `--verify` | Sync → Verify copies: *Copied files* or *Full* |
-| progress2 live line | Run panel: %, bytes, items, rate, ETA, current file — pause / resume / stop |
-| change tree in the log | Same trees in every run log (History → open a run) |
-| 30-day log retention | Settings → Keep run history (30 days by default) |
+| `EXCLUDES=(…)` | Filter → Exclude (**Reset to media-backup defaults** restores the list) |
+| `--dry-run` | the **Dry run** checkbox, or a trigger set to *Dry run only* |
+| `--verify` | Sync → Verify copies |
+| the progress2 line | the run panel |
+| the change tree in the log | the same trees in every run log |
+| 30-day log retention | Settings → Keep run history |
 
-**One deliberate difference:** the script deleted permanently, but new jobs default to
-**Recycle**. Files removed from the archive go to `.protosync-trash/<time>` on the archive drive
-for 14 days. That is your undo for a bad mirror. If you want the old behavior, set Sync →
-*Delete permanently*. Recycling costs no copy time, since it is a rename on the same drive,
-but it does use space until the purge.
+**One deliberate difference:** the script deleted files permanently. Proto-Sync moves them
+to `.protosync-trash` on the same drive for 14 days instead, which is your undo for a bad mirror.
+Set Sync → **Delete permanently** if you want the old behavior.
 
-## Safety model
+---
 
-A run that trips a guard is **blocked**: nothing changes, and the log and notification say why.
+## Safety
 
-- **Sentinel / mountpoint** — refuses to run against an empty mountpoint (drive not attached).
-- **Empty source** — refuses to mirror an empty left side onto a full right side.
-- **Max deletions** — 50% by default. When a reviewed sync exceeds it, the confirm dialog offers an explicit override
-  for that one run. A blocked manual run offers the same thing afterwards. Scheduled runs are never overridden.
-- **Free space** — checks the target can hold what's about to be copied.
-- **During the run** — watches that both drives stay mounted and responsive, and re-checks each
-  file right before deleting it. If it changed since the comparison, it's skipped.
-- **Afterwards** — size and time are verified for every copy (checksums optionally), then flushed to disk.
+A run that trips a guard is **blocked**. Nothing is changed, and the log and notification say why.
 
-## Webhooks & API
+| Guard | What it does |
+|---|---|
+| **Sentinel & mountpoint** | refuses to sync against a drive that isn't attached |
+| **Empty source** | refuses to mirror an empty left side over a full right side |
+| **Max deletions** | blocks a sync that would delete more than 50% (adjustable). After reviewing, you can override it for that one run. Scheduled runs are never overridden. |
+| **Free space** | checks the target can hold what's about to be copied |
+| **Drive watch** | stops the run if a drive disappears or stops responding mid-transfer |
+| **Re-check before delete** | a file that changed since the comparison is skipped, not deleted |
+| **Verify** | every copy is checked for size and time, optionally by checksum, and flushed to disk |
 
-Each job has a URL in *Edit job → Schedule*:
-
-```fish
-curl -fsS -X POST 'http://vega-cachy:8475/api/hooks/<job-id>?token=<token>'
-curl -fsS -X POST 'http://vega-cachy:8475/api/hooks/<job-id>?token=<token>&dry_run=true'
-```
-
-These work even with basic auth enabled. *Rotate* invalidates the old URL. Everything else
-(`/api/jobs`, `/api/runs`, `/api/events` …) is listed under Settings.
+---
 
 ## Configuration
 
-All settings are environment variables; see `.env.example`.
+Everything is set with environment variables in `.env` (or `Environment=` lines in the Quadlet unit):
 
-| Variable | Default | |
+| Variable | Default | What it's for |
 |---|---|---|
-| `PROTOSYNC_ROOTS` | `/mnt,/media,/srv,/run/media` | Only these trees can be browsed or synced |
-| `PROTOSYNC_DATA` | `/data` | Database, logs, locks |
-| `PROTOSYNC_PORT` | `8475` | |
-| `PROTOSYNC_USER` / `PROTOSYNC_PASSWORD` | – | Basic auth when both are set |
-| `PROTOSYNC_MAX_RUNS` | `1` | Parallel runs; others queue |
-| `PROTOSYNC_SEED_JOB` / `_LEFT` / `_RIGHT` | `1`, `/mnt/media`, `/mnt/media-archive1` | First-start job |
-| `TZ` | `UTC` | Schedules fire in this zone |
+| `PROTOSYNC_ROOTS` | `/mnt,/media,/srv,/run/media` | Only folders under these can be browsed or synced. |
+| `PROTOSYNC_PORT` | `8475` | The port the web UI listens on. |
+| `PROTOSYNC_USER` / `PROTOSYNC_PASSWORD` | *(empty)* | Turns on a login when both are set. |
+| `PROTOSYNC_MAX_RUNS` | `1` | How many syncs can run at once. The rest wait in line. |
+| `PROTOSYNC_SEED_LEFT` / `_RIGHT` | `/mnt/media`, `/mnt/media-archive1` | The folders for the job created on first start. |
+| `PROTOSYNC_DATA` | `/data` | Where the database and logs live. |
+| `TZ` | `UTC` | The time zone schedules use. |
 
-Size units are chosen in **Settings**. Decimal is the default (1 GB = 1,000,000,000 bytes), the same as
-FreeFileSync and drive labels. Binary is also available (1 GiB = 1,073,741,824 bytes). Only the display
-changes, not the bytes counted. That's why 52.4 GB and 48.8 GiB are the same amount.
+Size units and how long run history is kept are set inside the app on the **Settings** page.
+Sizes default to decimal (1 GB = 1,000,000,000 bytes), the same as FreeFileSync and drive labels.
+
+---
+
+## API
+
+Every job has its own start URL under **Edit job → Schedule**. It works even when the login
+is turned on, because the token in the URL is the key. **Rotate** makes the old URL stop working.
+
+```bash
+curl -fsS -X POST 'http://your-host:8475/api/hooks/<job-id>?token=<token>'
+curl -fsS -X POST 'http://your-host:8475/api/hooks/<job-id>?token=<token>&dry_run=true'
+```
+
+Main endpoints:
+
+| Method | Endpoint | Notes |
+|---|---|---|
+| `GET` | `/api/jobs` | list jobs with their last and next run |
+| `POST` | `/api/jobs/{id}/compare` | start a comparison |
+| `POST` | `/api/jobs/{id}/run` | compare and sync in one go (`{"dry_run": true}` for a preview) |
+| `GET` | `/api/runs` | run history |
+| `GET` | `/api/runs/{id}/log` | a run's full log |
+| `POST` | `/api/runs/{id}/pause` · `/resume` · `/cancel` | control a running sync |
+| `GET` / `POST` | `/api/hooks/{id}?token=…` | the per-job start URL |
+| `GET` | `/api/events` | live events (progress, results) as a server-sent stream |
+| `GET` | `/api/health` | health check |
+
+---
 
 ## Keyboard
 
-F5 compare · F9 synchronize · `/` search · arrows, PgUp/PgDn, Home/End to move (Shift extends
-the selection) · Ctrl+A / Esc select all / none · Alt+→ copy right · Alt+← copy left ·
-Alt+0 do nothing · Alt+D default · Shift+F10 context menu.
+| Key | Does |
+|---|---|
+| `F5` / `F9` | compare / synchronize |
+| `/` | search the comparison |
+| `↑` `↓` `PgUp` `PgDn` `Home` `End` | move through the grid (`Shift` extends the selection) |
+| `Ctrl+A` / `Esc` | select all / clear the selection |
+| `Alt+→` / `Alt+←` | copy to the right / copy to the left |
+| `Alt+0` / `Alt+D` | do nothing / back to the default action |
+| `Shift+F10` | context menu |
+
+---
+
+## How it's built
+
+```
+app/
+  main.py          the FastAPI app: REST API, live events, login
+  compare.py       scanning results into categories, move detection, two-way logic
+  scanner.py       the folder walker and filter patterns
+  syncer.py        runs a sync: rsync, moves, deletions, versioning, verification, logs
+  runner.py        the run queue, drive locks, pause and cancel
+  scheduler.py     triggers: times, cron, real-time watching, drive connects
+  notify.py        ntfy, Discord, Gotify, email, webhooks, and shell hooks
+  fsutil.py        mounts, free space, the folder browser
+  db.py            the SQLite data layer
+  models.py        the job settings
+static/
+  index.html       the page shell
+  js/              the frontend (plain JavaScript modules, no build step)
+  css/app.css      the dark theme
+deploy/            the Podman Quadlet unit and a bare-metal systemd unit
+meta/              the banner and screenshots for this README
+```
+
+The engine underneath is plain rsync, so there's nothing proprietary between you and your files.
+Everything Proto-Sync knows lives in one SQLite file in your data folder.
+
+---
+
+## Updating
+
+```bash
+git pull
+podman build --format docker -t localhost/proto-sync:latest .
+systemctl --user restart proto-sync
+```
+
+Your jobs and history are kept. The version number is shown under **Settings**.
+
+---
 
 ## Troubleshooting
 
-- **"folder is missing or not mounted" although it is mounted on the host.** The bind lacks
-  `rslave`, or the drive was mounted under a path outside the bound directory.
-- **Real-time trigger says the watch failed.** Large trees exceed the inotify limit. Raise it with
-  `sysctl fs.inotify.max_user_watches=524288` (persist it in `/etc/sysctl.d/`), or tick
-  *Poll instead of inotify*. Polling is also required on NFS, SMB and FUSE mounts.
-- **Every file shows as different on an NTFS or exFAT drive.** Keep the time tolerance at 2 s. If the drive
-  moved between time zones or DST, add `1` to *Ignore time shift*.
-- **Fonts look plain.** The UI loads Space Grotesk and JetBrains Mono from Google Fonts in your
-  browser. Offline it falls back to system fonts; nothing else depends on the internet.
-- **Permission denied on copies.** Under rootless Podman the files must be writable by your user.
-  Under Docker, see the `user:` note in `compose.yaml`.
+| Problem | Fix |
+|---|---|
+| A drive shows as missing but it's mounted on the host | The `/mnt` bind is missing `rslave`, or the drive is mounted outside the bound folder. |
+| Runs are blocked with "no .mounted" | Create the sentinel file on that drive, but only if it really is mounted. |
+| Every file shows as different on NTFS or exFAT | Keep the time tolerance at 2 s. If the drive changed time zones, add `1` to *Ignore time shift*. |
+| The real-time trigger says the watch failed | Raise `fs.inotify.max_user_watches` (e.g. `524288`), or tick *Poll instead of inotify*. |
+| Permission denied on copies | Under rootless Podman your user must be able to write to the drive. Under Docker, see `user:` in `compose.yaml`. |
+| The UI looks the same after updating | Reload once with the browser cache disabled. Newer versions re-check files automatically. |
+| Fonts look plain | The fonts load from Google Fonts in your browser. Offline it falls back to system fonts. |
 
-## Layout
+---
 
-```
-app/          FastAPI backend — compare, syncer (rsync), scheduler, runner, notify, API
-static/       Vanilla ES-module frontend, no build step
-Containerfile compose.yaml .env.example
-deploy/       Podman Quadlet unit, bare-metal systemd unit
-docs/         Screenshots of every screen
-```
+<div align="center">
+
+**Proto-Sync** · see every change before it happens.
+
+</div>
