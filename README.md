@@ -25,10 +25,8 @@
 
 Proto-Sync is a self-hosted, FreeFileSync-style backup tool that lives in your browser.
 Point it at two folders, and it shows you side by side exactly what will be copied, updated,
-moved, and deleted. Nothing changes until you press **Synchronize**. It started life as a
-bash script (`media-backup.sh`) that mirrored a media server to an archive drive, and it
-keeps every one of that script's safety checks. rsync does the transfers. It runs as a
-single container and keeps its history in one SQLite file.
+moved, and deleted. Nothing changes until you press **Synchronize**. It runs as a
+single container, and keeps its history in one SQLite file.
 
 ## Features
 
