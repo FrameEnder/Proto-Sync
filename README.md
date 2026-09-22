@@ -112,32 +112,6 @@ No containers? `deploy/proto-sync.service` runs it straight on the host with Pyt
 
 ---
 
-## Coming from media-backup.sh
-
-Proto-Sync keeps everything the original script did:
-
-| media-backup.sh | Proto-Sync |
-|---|---|
-| `SRC` / `DST` | left and right of a folder pair |
-| rsync `--delete-after` | **Mirror**, with deletion timing *After copying* |
-| `.mounted` sentinel checks | Safety → Sentinel file, required on both sides |
-| empty-source guard | Safety → Empty source guard |
-| `flock` lock file | per-drive locks, so two jobs never touch the same drive at once |
-| `--no-perms --no-owner --no-group` | applied automatically on NTFS, exFAT, FAT, and CIFS |
-| `--modify-window=2` | Compare → Time tolerance: 2 s |
-| `EXCLUDES=(…)` | Filter → Exclude (**Reset to media-backup defaults** restores the list) |
-| `--dry-run` | the **Dry run** checkbox, or a trigger set to *Dry run only* |
-| `--verify` | Sync → Verify copies |
-| the progress2 line | the run panel |
-| the change tree in the log | the same trees in every run log |
-| 30-day log retention | Settings → Keep run history |
-
-**One deliberate difference:** the script deleted files permanently. Proto-Sync moves them
-to `.protosync-trash` on the same drive for 14 days instead, which is your undo for a bad mirror.
-Set Sync → **Delete permanently** if you want the old behavior.
-
----
-
 ## Safety
 
 A run that trips a guard is **blocked**. Nothing is changed, and the log and notification say why.
