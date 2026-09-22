@@ -1,0 +1,42 @@
+# Podman Quadlet unit (rootless) — the systemd-native way to run Proto-Sync.
+#
+#   podman build -t localhost/proto-sync:latest /path/to/proto-sync
+#   mkdir -p ~/.config/containers/systemd ~/.local/share/proto-sync
+#   cp proto-sync.container ~/.config/containers/systemd/
+#   systemctl --user daemon-reload
+#   systemctl --user start proto-sync
+#   loginctl enable-linger "$USER"      # keep it running when you're logged out
+#
+# Logs: journalctl --user -u proto-sync -f
+
+[Unit]
+Description=Proto-Sync (compare & sync web app)
+Wants=network-online.target
+After=network-online.target local-fs.target
+
+[Container]
+Image=localhost/proto-sync:latest
+ContainerName=proto-sync
+PublishPort=8475:8475
+Volume=%h/.local/share/proto-sync:/data
+# rslave: drives mounted after start (USB/DAS archive disks) show up inside.
+Volume=/mnt:/mnt:rslave
+SecurityLabelDisable=true
+Environment=PROTOSYNC_ROOTS=/mnt
+Environment=PROTOSYNC_SEED_LEFT=/mnt/media
+Environment=PROTOSYNC_SEED_RIGHT=/mnt/media-archive1
+Environment=TZ=America/Phoenix
+# Environment=PROTOSYNC_USER=bob
+# Environment=PROTOSYNC_PASSWORD=change-me
+HealthCmd=python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8475/api/health', timeout=4)"
+HealthInterval=60s
+# Let an in-progress rsync finish its current file and the DB close cleanly.
+StopTimeout=60
+
+[Service]
+Restart=on-failure
+RestartSec=10
+TimeoutStartSec=120
+
+[Install]
+WantedBy=default.target

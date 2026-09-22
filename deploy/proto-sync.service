@@ -1,0 +1,38 @@
+# Bare-metal systemd unit (no container). For a host that already has rsync
+# and Python 3.11+. Install:
+#
+#   sudo mkdir -p /opt/proto-sync /var/lib/proto-sync
+#   sudo chown bob:bob /var/lib/proto-sync
+#   sudo cp -r app static requirements.txt /opt/proto-sync/
+#   sudo python3 -m venv /opt/proto-sync/venv
+#   sudo /opt/proto-sync/venv/bin/pip install -r /opt/proto-sync/requirements.txt
+#   sudo cp deploy/proto-sync.service /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now proto-sync
+#
+# Set User= to the account that owns your media (media-backup.sh ran as you).
+
+[Unit]
+Description=Proto-Sync (compare & sync web app)
+After=network-online.target local-fs.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=bob
+Group=bob
+WorkingDirectory=/opt/proto-sync
+Environment=PROTOSYNC_DATA=/var/lib/proto-sync
+Environment=PROTOSYNC_ROOTS=/mnt
+Environment=PROTOSYNC_PORT=8475
+ExecStart=/opt/proto-sync/venv/bin/python -m app.main
+Restart=on-failure
+RestartSec=10
+TimeoutStopSec=60
+# Hardening that still allows writing to your drives:
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/proto-sync /mnt
+
+[Install]
+WantedBy=multi-user.target

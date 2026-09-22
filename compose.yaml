@@ -1,0 +1,32 @@
+# Proto-Sync — works with `podman compose` and `docker compose`.
+#   cp .env.example .env && podman compose up -d --build
+services:
+  proto-sync:
+    build:
+      context: .
+      dockerfile: Containerfile
+    image: localhost/proto-sync:latest
+    container_name: proto-sync
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "8475:8475"
+    volumes:
+      - ./data:/data
+      # Bind the parent of your drives with rslave propagation, so drives that
+      # are mounted AFTER the container starts (USB/DAS archive disks) appear
+      # inside it. This is what makes the "when the drive connects" trigger work.
+      - type: bind
+        source: /mnt
+        target: /mnt
+        bind:
+          propagation: rslave
+    # SELinux hosts (Bazzite/Fedora): don't relabel whole media drives with :z —
+    # disable labelling for this container instead.
+    security_opt:
+      - label=disable
+    # Ownership: under ROOTLESS Podman the container's root IS your host user,
+    # so copied files stay yours — leave this as is. Do NOT add keep-id: that
+    # maps container root to a subordinate uid (files would land as ~100000).
+    # Under ROOTFUL Docker, uncomment to write as your user instead of root:
+    # user: "1000:1000"
