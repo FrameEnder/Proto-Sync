@@ -136,13 +136,27 @@ def browse(path: str) -> dict:
     }
 
 
+# Size display units. "si": 1 kB = 1000 B (FreeFileSync, drive labels, most
+# file managers). "iec": 1 KiB = 1024 B. Set from the saved setting at startup.
+SIZE_UNITS = "si"
+
+
+def set_size_units(units: str) -> None:
+    global SIZE_UNITS
+    SIZE_UNITS = "iec" if units == "iec" else "si"
+
+
 def human(n: float) -> str:
     n = float(n or 0)
-    for unit in ("B", "KB", "MB", "GB", "TB"):
-        if abs(n) < 1024 or unit == "TB":
+    if SIZE_UNITS == "iec":
+        base, units = 1024.0, ("B", "KiB", "MiB", "GiB", "TiB", "PiB")
+    else:
+        base, units = 1000.0, ("B", "kB", "MB", "GB", "TB", "PB")
+    for unit in units:
+        if abs(n) < base or unit == units[-1]:
             return f"{n:.0f} {unit}" if unit == "B" else f"{n:.2f} {unit}"
-        n /= 1024
-    return f"{n:.2f} PB"
+        n /= base
+    return f"{n:.2f} {units[-1]}"
 
 
 def sample_hash(path: str, chunk: int = 1 << 20) -> Optional[str]:

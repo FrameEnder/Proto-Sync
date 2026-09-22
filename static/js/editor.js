@@ -145,7 +145,7 @@ const lines = (s, p, rows = 7) =>
   `<textarea class="mono" rows="${rows}" data-bind="${p}" data-type="lines" spellcheck="false">${esc((getPath(s, p) || []).join("\n"))}</textarea>`;
 const mb = (s, p) => {
   const v = getPath(s, p);
-  return `<input type="number" min="0" step="any" data-bind="${p}" data-type="mb" value="${v == null ? "" : +(v / 1048576).toFixed(3)}" placeholder="off"><span class="unit">MB</span>`;
+  return `<input type="number" min="0" step="any" data-bind="${p}" data-type="mb" value="${v == null ? "" : +(v / 1048576).toFixed(3)}" placeholder="off"><span class="unit">MiB (1,048,576 bytes)</span>`;
 };
 
 // ------------------------------------------------------------------ panes --

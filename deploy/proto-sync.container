@@ -1,6 +1,6 @@
 # Podman Quadlet unit (rootless) — the systemd-native way to run Proto-Sync.
 #
-#   podman build -t localhost/proto-sync:latest /path/to/proto-sync
+#   podman build --format docker -t localhost/proto-sync:latest /path/to/proto-sync
 #   mkdir -p ~/.config/containers/systemd ~/.local/share/proto-sync
 #   cp proto-sync.container ~/.config/containers/systemd/
 #   systemctl --user daemon-reload

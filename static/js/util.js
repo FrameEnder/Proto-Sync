@@ -6,12 +6,18 @@ export function esc(s) {
   return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
 
+// Size units: "si" = 1 kB is 1000 bytes (FreeFileSync, drive labels);
+// "iec" = 1 KiB is 1024 bytes. Set from the server setting at boot.
+let SIZE_UNITS = "si";
+export function setSizeUnits(u) { SIZE_UNITS = u === "iec" ? "iec" : "si"; }
 export function bytes(n, digits = 1) {
   n = Number(n || 0);
-  if (n < 1024) return `${n} B`;
-  const u = ["KB", "MB", "GB", "TB", "PB"];
+  const [base, u] = SIZE_UNITS === "iec"
+    ? [1024, ["KiB", "MiB", "GiB", "TiB", "PiB"]]
+    : [1000, ["kB", "MB", "GB", "TB", "PB"]];
+  if (Math.abs(n) < base) return `${n} B`;
   let i = -1;
-  do { n /= 1024; i++; } while (n >= 1024 && i < u.length - 1);
+  do { n /= base; i++; } while (Math.abs(n) >= base && i < u.length - 1);
   return `${n.toFixed(n >= 100 ? 0 : digits)} ${u[i]}`;
 }
 

@@ -47,7 +47,7 @@ Open `http://<host>:8475`.
 ### Podman Quadlet (systemd-native, recommended for a server)
 
 ```fish
-podman build -t localhost/proto-sync:latest .
+podman build --format docker -t localhost/proto-sync:latest .
 mkdir -p ~/.config/containers/systemd ~/.local/share/proto-sync
 cp deploy/proto-sync.container ~/.config/containers/systemd/
 systemctl --user daemon-reload
@@ -145,6 +145,10 @@ All settings are environment variables; see `.env.example`.
 | `PROTOSYNC_MAX_RUNS` | `1` | Parallel runs; others queue |
 | `PROTOSYNC_SEED_JOB` / `_LEFT` / `_RIGHT` | `1`, `/mnt/media`, `/mnt/media-archive1` | First-start job |
 | `TZ` | `UTC` | Schedules fire in this zone |
+
+Size units are chosen in **Settings**. Decimal is the default (1 GB = 1,000,000,000 bytes), the same as
+FreeFileSync and drive labels. Binary is also available (1 GiB = 1,073,741,824 bytes). Only the display
+changes, not the bytes counted. That's why 52.4 GB and 48.8 GiB are the same amount.
 
 ## Keyboard
 

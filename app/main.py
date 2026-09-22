@@ -46,6 +46,7 @@ def seed() -> None:
 async def lifespan(_app: FastAPI):
     events.bind_loop(asyncio.get_running_loop())
     db.conn()
+    fsutil.set_size_units(db.kv_get("size_units", "si"))
     seed()
     scheduler.start()
     yield
@@ -72,6 +73,21 @@ async def basic_auth(request: Request, call_next):
             if not ok:
                 return Response(status_code=401, headers={"WWW-Authenticate": 'Basic realm="Proto-Sync"'})
     return await call_next(request)
+
+
+# ----------------------------------------------------------- caching ----
+@app.middleware("http")
+async def static_revalidate(request: Request, call_next):
+    """Make browsers re-check UI files on every load.
+
+    Without an explicit Cache-Control header browsers apply heuristic caching
+    and may keep serving an old app.js / util.js after an update. "no-cache"
+    still uses the cache, but asks first: unchanged files cost a tiny 304.
+    """
+    response = await call_next(request)
+    if request.url.path.startswith("/static/"):
+        response.headers["Cache-Control"] = "no-cache"
+    return response
 
 
 def _job_or_404(job_id: str) -> Job:
@@ -117,6 +133,7 @@ def info():
         "version": __version__, "rsync": rsync_v, "roots": config.ALLOWED_ROOTS,
         "max_runs": config.MAX_CONCURRENT_RUNS, "categories": CATEGORIES, "actions": ACTIONS,
         "log_retention_days": db.kv_get("log_retention_days", 30),
+        "size_units": db.kv_get("size_units", "si"),
         "auth": bool(config.AUTH_USER and config.AUTH_PASSWORD),
         "timezone": str(scheduler.sched.timezone),
     }
@@ -126,6 +143,10 @@ def info():
 def put_settings(body: dict = Body(...)):
     if "log_retention_days" in body:
         db.kv_set("log_retention_days", max(1, int(body["log_retention_days"])))
+    if "size_units" in body:
+        units = "iec" if body["size_units"] == "iec" else "si"
+        db.kv_set("size_units", units)
+        fsutil.set_size_units(units)
     return info()
 
 

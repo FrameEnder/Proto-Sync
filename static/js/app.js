@@ -2,7 +2,7 @@
 import { get, post, put, del, connectEvents } from "./api.js";
 import {
   $, $$, esc, bytes, num, dtime, rel, dur, icon, toast, openMenu, closeMenu, openModal, closeModal, confirmBox,
-  debounce, ACTION_LABEL, CATEGORY_LABEL, VARIANT_LABEL,
+  debounce, setSizeUnits, ACTION_LABEL, CATEGORY_LABEL, VARIANT_LABEL,
 } from "./util.js";
 import { Grid } from "./grid.js";
 import { openEditor, pickFolder, describeTrigger, TRIGGER_TYPES, DEFAULT_EXCLUDES } from "./editor.js";
@@ -912,6 +912,11 @@ async function renderSettings() {
       <div class="field"><label>Keep run history<small>Runs and their log files older than this are removed nightly.</small></label>
         <div class="control"><input type="number" class="input" id="setRet" min="1" value="${i.log_retention_days}" style="width:110px"><span class="unit">days</span>
           <button class="btn sm" id="setRetSave">Save</button></div></div>
+      <div class="field"><label>Size units<small>How sizes are shown in the UI, logs and notifications. The bytes counted are identical either way.</small></label>
+        <div class="control"><select class="input" id="setUnits" style="width:auto">
+          <option value="si" ${i.size_units !== "iec" ? "selected" : ""}>Decimal — 1 GB = 1,000,000,000 bytes (FreeFileSync, drive labels)</option>
+          <option value="iec" ${i.size_units === "iec" ? "selected" : ""}>Binary — 1 GiB = 1,073,741,824 bytes</option>
+        </select></div></div>
       <div class="field"><label>Jobs<small>Export from the job menu; imported jobs start with triggers disabled.</small></label>
         <div class="control"><button class="btn sm" id="setImport">${icon("plus", "sm")} Import job…</button></div></div>
     </div>
@@ -943,6 +948,16 @@ curl -N ${esc(origin)}/api/events</div></div></div>
     catch (e) { toast(e.message, "error"); }
   };
   $("#setImport").onclick = importJob;
+  $("#setUnits").onchange = async (e) => {
+    try {
+      S.info = await put("/api/settings", { size_units: e.target.value });
+      setSizeUnits(S.info.size_units);
+      // repaint everything that shows a size
+      grid.render(); renderStatus(); renderChips(); renderRunPanel();
+      Object.keys(S.drives).forEach(paintMeta);
+      toast(S.info.size_units === "iec" ? "Showing binary units (GiB)" : "Showing decimal units (GB)", "success");
+    } catch (err) { toast(err.message, "error"); }
+  };
 }
 
 // ================================================================== views ===
@@ -1178,6 +1193,7 @@ async function boot() {
   wireStatic();
   try {
     [S.info] = await Promise.all([get("/api/info"), loadJobs()]);
+    setSizeUnits(S.info.size_units);
   } catch (e) {
     toast(`Can't reach Proto-Sync: ${e.message}`, "error");
   }
